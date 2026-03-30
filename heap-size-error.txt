@@ -1,0 +1,247 @@
+# --------------------------------------------
+# Service Account (security baseline)
+# --------------------------------------------
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: report-sa
+  namespace: backend
+
+---
+# --------------------------------------------
+# Deployment
+# --------------------------------------------
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: report-deployment
+  namespace: backend
+
+spec:
+  replicas: 1
+  revisionHistoryLimit: 5
+
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+
+  selector:
+    matchLabels:
+      app: report-backend
+
+  template:
+    metadata:
+      labels:
+        app: report-backend
+
+    spec:
+      serviceAccountName: report-sa
+      terminationGracePeriodSeconds: 30
+      enableServiceLinks: false
+
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 2000
+
+      hostAliases:
+        - ip: "10.190.224.102"
+          hostnames:
+            - "fincore"
+        - ip: "10.190.224.103"
+          hostnames:
+            - "fincore"
+        - ip: "10.190.224.104"
+          hostnames:
+            - "fincore"
+        - ip: "10.190.224.105"
+          hostnames:
+            - "fincore"
+        - ip: "10.190.224.106"
+          hostnames:
+            - "fincore"
+
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app: report-backend
+
+      containers:
+        - name: report-container
+          image: a2p05vksharbor.corp.ad.sbi/cbops/report-service:PR-02
+          imagePullPolicy: Always
+          
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: "prod"
+            - name: HADOOP_FS_URI
+              value: "hdfs://10.190.224.102:8022"
+            - name: HADOOP_FS_USER
+              value: "root"
+            - name: JAVA_OPTS
+              value: "-Xms2g -Xmx8g -XX:+UseG1GC"              
+              
+          envFrom:
+            - configMapRef:
+                name: redis-config
+            - configMapRef:
+                name: kafka-config
+            - configMapRef:
+                name: oracle-config
+            - secretRef:
+                name: oracle-secret
+
+
+          resources:
+            requests:
+              memory: "2Gi"
+              cpu: "2000m"
+            limits:
+              memory: "8Gi"
+              cpu: "4000m"
+
+          ports:
+            - containerPort: 9005
+
+          startupProbe:
+            tcpSocket:
+              port: 9005
+            failureThreshold: 60
+            periodSeconds: 10
+
+          livenessProbe:
+            tcpSocket:
+              port: 9005
+            initialDelaySeconds: 90
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 5
+
+          readinessProbe:
+            tcpSocket:
+              port: 9005
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 5
+
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sh", "-c", "sleep 10"]
+
+---
+# --------------------------------------------
+# Service
+# --------------------------------------------
+apiVersion: v1
+kind: Service
+metadata:
+  name: report-service
+  namespace: backend
+
+spec:
+  selector:
+    app: report-backend
+
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: 9005
+
+  type: ClusterIP
+
+---
+# --------------------------------------------
+# Horizontal Pod Autoscaler
+# --------------------------------------------
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: report-hpa
+  namespace: backend
+
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: report-deployment
+
+  minReplicas: 1
+  maxReplicas: 5
+
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 60
+    scaleDown:
+      stabilizationWindowSeconds: 300
+
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+
+---
+# --------------------------------------------
+# Pod Disruption Budget
+# --------------------------------------------
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: report-pdb
+  namespace: backend
+
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: report-backend
+
+        Pod-1 Error logs ::
+2026-03-30 16:57:09.380 ERROR [org.springframework.kafka.KafkaListenerEndpointContainer#0-0-C-1] o.s.c.l.LogAccessor: Error while stopping the container
+java.util.concurrent.CompletionException: java.lang.OutOfMemoryError: Java heap space
+        at java.base/java.util.concurrent.CompletableFuture.encodeThrowable(CompletableFuture.java:315)
+        at java.base/java.util.concurrent.CompletableFuture.completeThrowable(CompletableFuture.java:320)
+        at java.base/java.util.concurrent.CompletableFuture$AsyncRun.run(CompletableFuture.java:1807)
+        at java.base/java.lang.Thread.run(Thread.java:1570)
+Caused by: java.lang.OutOfMemoryError: Java heap space
+{"@timestamp":"2026-03-30T22:27:09.380663609+05:30","level":"ERROR","service":"ReportService","traceId":"","userId":"","clientIp":"","apiPath":"","class":"o.s.k.l.KafkaMessageListenerContainer","message":"Error while stopping the container","stack_trace":"java.util.concurrent.CompletionException: java.lang.OutOfMemoryError: Java heap space\n\tat java.base/java.util.concurrent.CompletableFuture.encodeThrowable(CompletableFuture.java:315)\n\tat java.base/java.util.concurrent.CompletableFuture.completeThrowable(CompletableFuture.java:320)\n\tat java.base/java.util.concurrent.CompletableFuture$AsyncRun.run(CompletableFuture.java:1807)\n\tat java.base/java.lang.Thread.run(Thread.java:1570)\nCaused by: java.lang.OutOfMemoryError: Java heap space\n"}
+2026-03-30 16:57:35.202 ERROR [Catalina-utility-1] o.a.j.l.DirectJDKLog: Error processing async timeouts
+java.util.concurrent.ExecutionException: java.lang.OutOfMemoryError: Java heap space
+        at java.base/java.util.concurrent.FutureTask.report(FutureTask.java:122)
+        at java.base/java.util.concurrent.FutureTask.get(FutureTask.java:191)
+        at org.apache.coyote.AbstractProtocol.startAsyncTimeout(AbstractProtocol.java:651)
+        at org.apache.coyote.AbstractProtocol.lambda$start$0(AbstractProtocol.java:637)
+        at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:572)
+        at java.base/java.util.concurrent.FutureTask.runAndReset(FutureTask.java:358)
+        at java.base/java.util.concurrent.ScheduledThreadPoolExecutor$ScheduledFutureTask.run(ScheduledThreadPoolExecutor.java:305)
+        at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)
+        at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)
+        at org.apache.tomcat.util.threads.TaskThread$WrappingRunnable.run(TaskThread.java:63)
+        at java.base/java.lang.Thread.run(Thread.java:1570)
+Caused by: java.lang.OutOfMemoryError: Java heap space
+        at java.base/java.util.concurrent.ConcurrentHashMap$KeySetView.iterator(ConcurrentHashMap.java:4640)
+        at org.apache.coyote.AbstractProtocol.lambda$startAsyncTimeout$1(AbstractProtocol.java:658)
+        at org.apache.coyote.AbstractProtocol$$Lambda/0x00007fc2cef37448.run(Unknown Source)
+        at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:572)
+        at java.base/java.util.concurrent.FutureTask.runAndReset(FutureTask.java:358)
+        at java.base/java.util.concurrent.ScheduledThreadPoolExecutor$ScheduledFutureTask.run(ScheduledThreadPoolExecutor.java:305)
+        at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)
+        at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)
+        at org.apache.tomcat.util.threads.TaskThread$WrappingRunnable.run(TaskThread.java:63)
+        at java.base/java.lang.Thread.runWith(Thread.java:1583)
+        ... 1 common frames omitted
+
+continously I am getting OOM error as per saw in above logs how to resolved or handle this erro or OOm error in the prodcition env or what shoud I do guide me.
+
+
