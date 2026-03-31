@@ -1,0 +1,16 @@
+Run These Now With Correct Paths
+Check basic-security with correct path:
+grep -i "basic" /media/production-setup/apache-druid-34.0.0/conf/druid/cluster/_common/common.runtime.properties
+Check what files actually exist in your conf:
+ls -la /media/production-setup/apache-druid-34.0.0/conf/druid/cluster/_common/
+Check truststore contents:
+keytool -list -keystore /media/production-setup/apache-druid-34.0.0/ssl/truststore.jks -storepass 'DruidPass123'
+Check where MiddleManager conf actually is:
+ls -la /media/production-setup/apache-druid-34.0.0/conf/druid/cluster/middleManager/
+Critical Thing I Spotted
+Your pwd output shows:
+/media/production-setup/apache-druid-34.0.0/conf/druid/cluster/_common
+But the Druid startup script looks for common runtime at a specific path. Run this to confirm Druid is actually reading YOUR common file:
+grep -r "common.runtime" /media/production-setup/apache-druid-34.0.0/bin/
+cat /media/production-setup/apache-druid-34.0.0/conf/druid/cluster/middleManager/runtime.properties
+Paste all outputs here — I want to see exactly what files exist and what Druid is actually reading before giving you anything else. This is the last diagnostic step.
