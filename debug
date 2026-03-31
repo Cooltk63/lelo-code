@@ -1,46 +1,97 @@
-[root@fcproddruidhist1 middleManager]# grep -i "basic" /media/production-setup/apache-druid-34.0.0/conf/druid/cluster/_common/common.runtime.properties
-[root@fcproddruidhist1 middleManager]#
-[root@fcproddruidhist1 middleManager]#
-[root@fcproddruidhist1 middleManager]# ls -la /media/production-setup/apache-druid-34.0.0/conf/druid/cluster/_common/
-total 28
-drwxr-xr-x 2 root root 4096 Mar 31 13:37 .
-drwxr-xr-x 6 root root 4096 Feb 18  2022 ..
--rwxrwxr-x 1 root root 3482 Mar 31 13:29 common.runtime.properties
--rwxrwxr-x 1 root root  979 Mar  9 12:22 core-site.xml
--rwxrwxr-x 1 root root 3587 Mar  9 12:23 hdfs-site.xml
--rwxrwxr-x 1 root root 4112 Feb 18  2022 log4j2.xml
-[root@fcproddruidhist1 middleManager]#
-[root@fcproddruidhist1 middleManager]#
-[root@fcproddruidhist1 middleManager]# keytool -list -keystore /media/production-setup/apache-druid-34.0.0/ssl/truststore.jks -storepass 'DruidPass123'
-Keystore type: PKCS12
-Keystore provider: SUN
+common-runtime::
 
-Your keystore contains 1 entry
+####################################################################
+# Apache Druid - Common Runtime Properties (PRODUCTION)
+# KEY FIX: trustStoreType=PKCS12 (Java 17 keytool auto-migrated JKS→PKCS12)
+####################################################################
 
-druid-cluster, Mar 31, 2026, trustedCertEntry,
-Certificate fingerprint (SHA-256): 6D:8B:75:D1:1F:8A:F8:D9:30:7E:3C:56:9D:D2:49:32:01:28:DF:0D:27:1D:E3:AA:FD:86:C8:99:73:8E:A8:16
-[root@fcproddruidhist1 middleManager]# ls -la /media/production-setup/apache-druid-34.0.0/conf/druid/cluster/middleManager/
-ls: cannot access '/media/production-setup/apache-druid-34.0.0/conf/druid/cluster/middleManager/': No such file or directory
-[root@fcproddruidhist1 middleManager]# ^C
-[root@fcproddruidhist1 middleManager]# ls -la /media/production-setup/apache-druid-34.0.0/conf/druid/cluster/data/middleManager/
-total 24
-drwxr-xr-x 2 root root 4096 Mar 31 13:50 .
-drwxr-xr-x 5 root root 4096 Feb 18  2022 ..
--rw-r--r-- 1 root root  299 Mar 31 13:28 jvm.config
--rw-r--r-- 1 root root   48 Mar 31 13:28 main.config
--rw-r--r-- 1 root root 4175 Mar 31 13:27 runtime.properties
-[root@fcproddruidhist1 middleManager]#
-[root@fcproddruidhist1 middleManager]# ls -la /media/production-setup/apache-druid-34.0.0/conf/druid/cluster/data/middleManager/
-total 24
-drwxr-xr-x 2 root root 4096 Mar 31 13:50 .
-drwxr-xr-x 5 root root 4096 Feb 18  2022 ..
--rw-r--r-- 1 root root  299 Mar 31 13:28 jvm.config
--rw-r--r-- 1 root root   48 Mar 31 13:28 main.config
--rw-r--r-- 1 root root 4175 Mar 31 13:27 runtime.properties
-[root@fcproddruidhist1 middleManager]# cat /media/production-setup/apache-druid-34.0.0/conf/druid/cluster/data/middleManager/runtime.properties
+# ===============================
+# Extensions
+# ===============================
+druid.extensions.directory=extensions
+druid.extensions.loadList=["postgresql-metadata-storage","simple-client-sslcontext","druid-hdfs-storage","druid-parquet-extensions","druid-avro-extensions","druid-kafka-indexing-service","druid-deltalake-extensions"]
+
+# ===============================
+# Metadata Storage (PostgreSQL)
+# ===============================
+druid.metadata.storage.type=postgresql
+druid.metadata.storage.connector.connectURI=jdbc:postgresql://fcprodhdfsjn7:5435/druid
+druid.metadata.storage.connector.user=druid
+druid.metadata.storage.connector.password=Password#1234
+
+# ===============================
+# ZooKeeper
+# ===============================
+druid.zk.service.host=jn1:2281,jn2:2281,jn3:2281,jn4:2281,jn5:2281,jn6:2281,jn7:2281
+druid.zk.paths.base=/druid
+
+# ===============================
+# Deep Storage (HDFS)
+# ===============================
+druid.storage.type=hdfs
+druid.storage.storageDirectory=hdfs://fincore/druid/segments
+druid.indexer.logs.type=hdfs
+druid.indexer.logs.directory=hdfs://fincore/druid/indexing-logs
+
+# ===============================
+# Service Discovery
+# ===============================
+druid.selectors.indexing.serviceName=druid/overlord
+druid.selectors.coordinator.serviceName=druid/coordinator
+
+# ===============================
+# Coordinator / Overlord
+# ===============================
+druid.coordinator.startDelay=PT30S
+druid.coordinator.period=PT30S
+druid.indexer.queue.startDelay=PT30S
+druid.indexer.runner.type=remote
+druid.indexer.storage.type=metadata
+
+# ===============================
+# Logging
+# ===============================
+druid.monitoring.monitors=["org.apache.druid.java.util.metrics.JvmMonitor"]
+druid.emitter=logging
+druid.emitter.logging.logLevel=info
+druid.startup.logging.logProperties=true
+
+# ===============================
+# Time and Locale
+# ===============================
+user.timezone=Asia/Kolkata
+user.language=en
+
+####################################################################
+# HTTPS / SSL
+####################################################################
+
+druid.enableTlsPort=true
+druid.server.https.enable=true
+druid.internal.http.useSSL=true
+
+# Keystore - JKS (druid-keystore.jks is confirmed JKS format)
+druid.server.https.keyStoreType=JKS
+
+# Truststore - PKCS12 (Java 17 keytool migrated truststore.jks to PKCS12)
+druid.server.https.trustStoreType=PKCS12
+druid.server.https.trustStorePath=/media/production-setup/apache-druid-34.0.0/ssl/truststore.jks
+druid.server.https.trustStorePassword=DruidPass123
+
+# Client HTTPS - truststore is PKCS12 here too
+druid.client.https.protocol=TLSv1.2
+druid.client.https.trustStoreType=PKCS12
+druid.client.https.trustStorePath=/media/production-setup/apache-druid-34.0.0/ssl/truststore.jks
+druid.client.https.trustStorePassword=DruidPass123
+druid.client.https.validateHostnames=false
+
+
+runtime :: 
+
+
 ####################################################################
 # MiddleManager - runtime.properties (PRODUCTION)
-# Based on working DEV config + Peon SSL fix for Basic Auth
+# KEY FIX: all trustStoreType changed to PKCS12
 ####################################################################
 
 druid.service=druid/middleManager
@@ -76,7 +127,8 @@ druid.indexer.fork.property.druid.processing.numThreads=3
 druid.indexer.task.hadoopWorkingPath=var/druid/hadoop-tmp
 
 # ===============================
-# HTTPS - Server (this node identity)
+# HTTPS - Server
+# Keystore is JKS format (confirmed via keytool -list)
 # ===============================
 druid.enableTlsPort=true
 druid.server.https.enable=true
@@ -88,26 +140,31 @@ druid.server.https.certAlias=druid-cluster
 
 # ===============================
 # HTTPS - Truststore
+# PKCS12 format (Java 17 keytool auto-migrated during password change)
 # ===============================
-druid.server.https.trustStoreType=JKS
+druid.server.https.trustStoreType=PKCS12
 druid.server.https.trustStorePath=/media/production-setup/apache-druid-34.0.0/ssl/truststore.jks
 druid.server.https.trustStorePassword=DruidPass123
 
+# ===============================
+# Client HTTPS
+# ===============================
+druid.client.https.protocol=TLSv1.2
+druid.client.https.trustStoreType=PKCS12
+druid.client.https.trustStorePath=/media/production-setup/apache-druid-34.0.0/ssl/truststore.jks
+druid.client.https.trustStorePassword=DruidPass123
+druid.client.https.validateHostnames=false
+
 ####################################################################
-# CRITICAL: Peon Task SSL Configuration
-# Production has Basic Auth (CoordinatorPollingBasicAuthenticatorCacheManager)
-# which forces Druid to validate Peon SSL at startup.
-# Without these fork.property lines MiddleManager crashes immediately.
-# DEV works without these only because DEV has no Basic Auth module.
+# Peon SSL - fork properties
 ####################################################################
 
-# Peon inherits HTTPS mode
 druid.indexer.fork.property.druid.enableTlsPort=true
 druid.indexer.fork.property.druid.internal.http.useSSL=true
 
-# Peon client SSL (peon talks to Coordinator/Overlord over HTTPS)
+# Peon client SSL
 druid.indexer.fork.property.druid.client.https.protocol=TLSv1.2
-druid.indexer.fork.property.druid.client.https.trustStoreType=JKS
+druid.indexer.fork.property.druid.client.https.trustStoreType=PKCS12
 druid.indexer.fork.property.druid.client.https.trustStorePath=/media/production-setup/apache-druid-34.0.0/ssl/truststore.jks
 druid.indexer.fork.property.druid.client.https.trustStorePassword=DruidPass123
 druid.indexer.fork.property.druid.client.https.keyStoreType=JKS
@@ -116,53 +173,29 @@ druid.indexer.fork.property.druid.client.https.keyStorePassword=DruidPass123
 druid.indexer.fork.property.druid.client.https.certAlias=druid-cluster
 druid.indexer.fork.property.druid.client.https.validateHostnames=false
 
-# Peon server SSL (peon itself serves HTTPS for task status callbacks)
+# Peon server SSL
 druid.indexer.fork.property.druid.server.https.keyStoreType=JKS
 druid.indexer.fork.property.druid.server.https.keyStorePath=/media/production-setup/apache-druid-34.0.0/ssl/druid-keystore.jks
 druid.indexer.fork.property.druid.server.https.keyStorePassword=DruidPass123
 druid.indexer.fork.property.druid.server.https.certAlias=druid-cluster
-druid.indexer.fork.property.druid.server.https.trustStoreType=JKS
+druid.indexer.fork.property.druid.server.https.trustStoreType=PKCS12
 druid.indexer.fork.property.druid.server.https.trustStorePath=/media/production-setup/apache-druid-34.0.0/ssl/truststore.jks
 druid.indexer.fork.property.druid.server.https.trustStorePassword=DruidPass123
 
-this is my start-middlemanager.sh
-#!/bin/bash
-# Wrapper to start Apache Druid MiddleManager
-
-export DRUID_HOME=/media/production-setup/apache-druid-34.0.0
-export JAVA_HOME=/media/production-setup/jdk-17.0.16
-export DRUID_CONF_DIR=$DRUID_HOME/conf/druid/cluster
-
-exec "$JAVA_HOME/bin/java" \
-  -Ddruid.node.type=middleManager \
-  -Djava.io.tmpdir=$DRUID_HOME/var/tmp \
-  -cp "$DRUID_CONF_DIR:$DRUID_HOME/lib/*" \
-  org.apache.druid.cli.Main server middleManager \
-  >> "$DRUID_HOME/log/middlemanager.out" 2>&1
-
-druid-middlemanager.service code as per below
-[root@fcproddruidhist1 system]# cat druid-middlemanager.service
-[Unit]
-Description=Apache Druid MiddleManager
-After=network.target postgresql-16.service zookeeper.service druid-coordinator.service
-
-[Service]
-Environment="JAVA_TOOL_OPTIONS=-Ddruid.node.type=middleManager"
-Type=simple
-User=root
-Group=root
-EnvironmentFile=/etc/default/druid
-WorkingDirectory=/media/production-setup/apache-druid-34.0.0
-ExecStart=/bin/bash -c '/media/production-setup/apache-druid-34.0.0/bin/start-middleManager.sh'
-Restart=on-failure
-LimitNOFILE=65536
-
-[Install]
-WantedBy=multi-user.target
-
-[root@fcproddruidhist1 system]# ls -lh /media/production-setup/apache-druid-34.0.0/bin/start-middleManager.sh
--rwxrwxrwx 1 root root 475 Oct 10 12:59 /media/production-setup/apache-druid-34.0.0/bin/start-middleManager.sh
 
 
+jvm
 
+
+-server
+-Xms8g
+-Xmx8g
+-XX:+UseG1GC
+-XX:MaxGCPauseMillis=100
+-XX:+ExitOnOutOfMemoryError
+-Duser.timezone=Asia/Kolkata
+-Dfile.encoding=UTF-8
+-Djava.io.tmpdir=var/tmp
+-Djava.util.logging.manager=org.apache.logging.log4j.jul.LogManager
+--add-opens=jdk.management/com.sun.management.internal=ALL-UNNAMED
 
