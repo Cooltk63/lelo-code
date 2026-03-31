@@ -1,5 +1,4 @@
-runtime.properties
-
+runtime.properties ::
 ####################################################################
 # MiddleManager - runtime.properties (PRODUCTION)
 # Based on working DEV config + Peon SSL fix for Basic Auth
@@ -88,7 +87,7 @@ druid.indexer.fork.property.druid.server.https.trustStorePath=/media/production-
 druid.indexer.fork.property.druid.server.https.trustStorePassword=DruidPass123
 
 
-common-runtime
+common-runtime.properties ::
 ####################################################################
 # Apache Druid - Common Runtime Properties (PRODUCTION)
 # Based on working DEV config - cleaned up invalid properties
@@ -182,9 +181,7 @@ druid.client.https.trustStorePath=/media/production-setup/apache-druid-34.0.0/ss
 druid.client.https.trustStorePassword=DruidPass123
 druid.client.https.validateHostnames=false
 
-
-
-jvm
+jvm.config ::
 
 -server
 -Xms8g
@@ -195,29 +192,67 @@ jvm
 -Duser.timezone=Asia/Kolkata
 -Dfile.encoding=UTF-8
 -Djava.io.tmpdir=var/tmp
+-Djavax.net.ssl.trustStoreType=JKS
+-Djavax.net.ssl.trustStore=/media/production-setup/apache-druid-34.0.0/ssl/truststore.jks
+-Djavax.net.ssl.trustStorePassword=DruidPass123
+-Djavax.net.ssl.keyStoreType=JKS
+-Djavax.net.ssl.keyStore=/media/production-setup/apache-druid-34.0.0/ssl/druid-keystore.jks
+-Djavax.net.ssl.keyStorePassword=DruidPass123
 -Djava.util.logging.manager=org.apache.logging.log4j.jul.LogManager
 --add-opens=jdk.management/com.sun.management.internal=ALL-UNNAMED
 
+Console Error ::
 
-this the out put I am getting and alsong with I have shared you the file 
-[root@fcproddruidhist1 _common]# pwd
-/media/production-setup/apache-druid-34.0.0/conf/druid/cluster/_common
-[root@fcproddruidhist1 _common]#  -list -keystore /media/production-setup/apache-druid-34.0.0/ssl/druid-keystore.jks                                                                                                                         -storepass 'DruidPass123'
-bash: -list: command not found...
-[root@fcproddruidhist1 _common]# keytool -list -keystore /media/production-setup/apache-druid-34.0.0/ssl/druid-keysto                                                                                                                        re.jks -storepass 'DruidPass123'
-Keystore type: JKS
-Keystore provider: SUN
 
-Your keystore contains 1 entry
+Picked up JAVA_TOOL_OPTIONS: -Ddruid.node.type=middleManager
+16:59:36.674 [main] ERROR org.apache.druid.cli.CliMiddleManager - Error when starting up.  Failing.
+com.google.inject.ProvisionException: Unable to provision, see the following errors:
 
-druid-cluster, Mar 21, 2026, PrivateKeyEntry,
-Certificate fingerprint (SHA-256): 6D:8B:75:D1:1F:8A:F8:D9:30:7E:3C:56:9D:D2:49:32:01:28:DF:0D:27:1D:E3:AA:FD:86:C8:9                                                                                                                        9:73:8E:A8:16
+1) [Guice/ErrorInCustomProvider]: NullPointerException: must specify a trustStorePath
+  while locating SSLContextProvider
+  while locating SSLContext annotated with interface EscalatedGlobal
+  at HttpClientModule.configure(HttpClientModule.java:79)
+      \_ installed by: Modules$OverrideModule -> Modules$OverrideModule -> HttpClientModule
+  at CoordinatorDiscoveryModule.getLeaderHttpClient(CoordinatorDiscoveryModule.java:51)
+      \_ for 1st parameter
+  at CoordinatorDiscoveryModule.getLeaderHttpClient(CoordinatorDiscoveryModule.java:51)
+      \_ installed by: Modules$OverrideModule -> Modules$OverrideModule -> CoordinatorDiscoveryModule
+  at CoordinatorPollingBasicAuthenticatorCacheManager.<init>(CoordinatorPollingBasicAuthenticatorCacheManager.java:88)
+      \_ for 4th parameter
+  at CoordinatorPollingBasicAuthenticatorCacheManager.class(CoordinatorPollingBasicAuthenticatorCacheManager.java:70)
+  while locating CoordinatorPollingBasicAuthenticatorCacheManager
+  at BasicSecurityDruidModule.createAuthenticatorCacheManager(BasicSecurityDruidModule.java:113)
+      \_ installed by: Modules$OverrideModule -> BasicSecurityDruidModule
+  while locating BasicAuthenticatorCacheManager
 
-Warning:
-The JKS keystore uses a proprietary format. It is recommended to migrate to PKCS12 which is an industry standard form                                                                                                                        at using "keytool -importkeystore -srckeystore /media/production-setup/apache-druid-34.0.0/ssl/druid-keystore.jks -de                                                                                                                        stkeystore /media/production-setup/apache-druid-34.0.0/ssl/druid-keystore.jks -deststoretype pkcs12".
-[root@fcproddruidhist1 _common]# grep -i "basic-security\|basic_security" /media/production-setup/apache-druid-34.0.0                                                                                                                        /conf/druid/_common/common.runtime.properties
-grep: /media/production-setup/apache-druid-34.0.0/conf/druid/_common/common.runtime.properties: No such file or direc                                                                                                                        tory
-[root@fcproddruidhist1 _common]# grep -i "basic-security\|basic_security" /media/production-setup/apache-druid-34.0.0/conf/druid/_common/common.runtime.properties
-grep: /media/production-setup/apache-druid-34.0.0/conf/druid/_common/common.runtime.properties: No such file or directory
-[root@fcproddruidhist1 _common]# pwd
-/media/production-setup/apache-druid-34.0.0/conf/druid/cluster/_common
+Learn more:
+  https://github.com/google/guice/wiki/ERROR_IN_CUSTOM_PROVIDER
+
+1 error
+
+======================
+Full classname legend:
+======================
+BasicAuthenticatorCacheManager:                   "org.apache.druid.security.basic.authentication.db.cache.BasicAuthenticatorCacheManager"
+BasicSecurityDruidModule:                         "org.apache.druid.security.basic.BasicSecurityDruidModule"
+CoordinatorDiscoveryModule:                       "org.apache.druid.guice.CoordinatorDiscoveryModule"
+CoordinatorPollingBasicAuthenticatorCacheManager: "org.apache.druid.security.basic.authentication.db.cache.CoordinatorPollingBasicAuthenticatorCacheManager"
+EscalatedGlobal:                                  "org.apache.druid.guice.annotations.EscalatedGlobal"
+HttpClientModule:                                 "org.apache.druid.guice.http.HttpClientModule"
+Modules$OverrideModule:                           "com.google.inject.util.Modules$OverrideModule"
+SSLContext:                                       "javax.net.ssl.SSLContext"
+SSLContextProvider:                               "org.apache.druid.https.SSLContextProvider"
+========================
+End of classname legend:
+========================
+
+        at com.google.inject.internal.InternalProvisionException.toProvisionException(InternalProvisionException.java:251) ~[guice-5.1.0.jar:?]
+        at com.google.inject.internal.InjectorImpl$1.get(InjectorImpl.java:1104) ~[guice-5.1.0.jar:?]
+        at com.google.inject.internal.InjectorImpl.getInstance(InjectorImpl.java:1134) ~[guice-5.1.0.jar:?]
+        at org.apache.druid.guice.LifecycleModule$2.start(LifecycleModule.java:150) ~[druid-processing-34.0.0.jar:34.0.0]
+        at org.apache.druid.cli.GuiceRunnable.initLifecycle(GuiceRunnable.java:137) [druid-services-34.0.0.jar:34.0.0]
+        at org.apache.druid.cli.GuiceRunnable.initLifecycle(GuiceRunnable.java:94) [druid-services-34.0.0.jar:34.0.0]
+        at org.apache.druid.cli.ServerRunnable.run(ServerRunnable.java:67) [druid-services-34.0.0.jar:34.0.0]
+        at org.apache.druid.cli.Main.main(Main.java:112) [druid-services-34.0.0.jar:34.0.0]
+Caused by: java.lang.NullPointerException: must specify a trustStorePath
+
