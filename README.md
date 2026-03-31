@@ -44,7 +44,7 @@ druid.enableTlsPort=true
 druid.server.https.enable=true
 druid.tlsPort=8284
 druid.server.https.keyStoreType=JKS
-druid.server.https.keyStorePath=/media/production-setup/apache-druid-34.0.0/ssl/druid-cluster-keystore.jks
+druid.server.https.keyStorePath=/media/production-setup/apache-druid-34.0.0/ssl/druid-keystore.jks
 druid.server.https.keyStorePassword=DruidPass123
 druid.server.https.certAlias=druid-cluster
 
@@ -73,14 +73,14 @@ druid.indexer.fork.property.druid.client.https.trustStoreType=JKS
 druid.indexer.fork.property.druid.client.https.trustStorePath=/media/production-setup/apache-druid-34.0.0/ssl/truststore.jks
 druid.indexer.fork.property.druid.client.https.trustStorePassword=DruidPass123
 druid.indexer.fork.property.druid.client.https.keyStoreType=JKS
-druid.indexer.fork.property.druid.client.https.keyStorePath=/media/production-setup/apache-druid-34.0.0/ssl/druid-cluster-keystore.jks
+druid.indexer.fork.property.druid.client.https.keyStorePath=/media/production-setup/apache-druid-34.0.0/ssl/druid-keystore.jks
 druid.indexer.fork.property.druid.client.https.keyStorePassword=DruidPass123
 druid.indexer.fork.property.druid.client.https.certAlias=druid-cluster
 druid.indexer.fork.property.druid.client.https.validateHostnames=false
 
 # Peon server SSL (peon itself serves HTTPS for task status callbacks)
 druid.indexer.fork.property.druid.server.https.keyStoreType=JKS
-druid.indexer.fork.property.druid.server.https.keyStorePath=/media/production-setup/apache-druid-34.0.0/ssl/druid-cluster-keystore.jks
+druid.indexer.fork.property.druid.server.https.keyStorePath=/media/production-setup/apache-druid-34.0.0/ssl/druid-keystore.jks
 druid.indexer.fork.property.druid.server.https.keyStorePassword=DruidPass123
 druid.indexer.fork.property.druid.server.https.certAlias=druid-cluster
 druid.indexer.fork.property.druid.server.https.trustStoreType=JKS
