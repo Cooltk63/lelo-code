@@ -197,3 +197,27 @@ jvm
 -Djava.io.tmpdir=var/tmp
 -Djava.util.logging.manager=org.apache.logging.log4j.jul.LogManager
 --add-opens=jdk.management/com.sun.management.internal=ALL-UNNAMED
+
+
+this the out put I am getting and alsong with I have shared you the file 
+[root@fcproddruidhist1 _common]# pwd
+/media/production-setup/apache-druid-34.0.0/conf/druid/cluster/_common
+[root@fcproddruidhist1 _common]#  -list -keystore /media/production-setup/apache-druid-34.0.0/ssl/druid-keystore.jks                                                                                                                         -storepass 'DruidPass123'
+bash: -list: command not found...
+[root@fcproddruidhist1 _common]# keytool -list -keystore /media/production-setup/apache-druid-34.0.0/ssl/druid-keysto                                                                                                                        re.jks -storepass 'DruidPass123'
+Keystore type: JKS
+Keystore provider: SUN
+
+Your keystore contains 1 entry
+
+druid-cluster, Mar 21, 2026, PrivateKeyEntry,
+Certificate fingerprint (SHA-256): 6D:8B:75:D1:1F:8A:F8:D9:30:7E:3C:56:9D:D2:49:32:01:28:DF:0D:27:1D:E3:AA:FD:86:C8:9                                                                                                                        9:73:8E:A8:16
+
+Warning:
+The JKS keystore uses a proprietary format. It is recommended to migrate to PKCS12 which is an industry standard form                                                                                                                        at using "keytool -importkeystore -srckeystore /media/production-setup/apache-druid-34.0.0/ssl/druid-keystore.jks -de                                                                                                                        stkeystore /media/production-setup/apache-druid-34.0.0/ssl/druid-keystore.jks -deststoretype pkcs12".
+[root@fcproddruidhist1 _common]# grep -i "basic-security\|basic_security" /media/production-setup/apache-druid-34.0.0                                                                                                                        /conf/druid/_common/common.runtime.properties
+grep: /media/production-setup/apache-druid-34.0.0/conf/druid/_common/common.runtime.properties: No such file or direc                                                                                                                        tory
+[root@fcproddruidhist1 _common]# grep -i "basic-security\|basic_security" /media/production-setup/apache-druid-34.0.0/conf/druid/_common/common.runtime.properties
+grep: /media/production-setup/apache-druid-34.0.0/conf/druid/_common/common.runtime.properties: No such file or directory
+[root@fcproddruidhist1 _common]# pwd
+/media/production-setup/apache-druid-34.0.0/conf/druid/cluster/_common
